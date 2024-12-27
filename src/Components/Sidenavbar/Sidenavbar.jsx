@@ -1,554 +1,1722 @@
-import React, { useEffect, useRef,useState} from "react";
-import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
-import app from "../../firebase";
+import React, { useEffect,  useState } from "react";
 import "./Sidenavbar.css";
 import logo from "../../Assets/logo.jpeg";
-import { CiHome } from "react-icons/ci";
 import { CgProfile } from "react-icons/cg";
 import { MdHighQuality } from "react-icons/md";
 import { FaInternetExplorer } from "react-icons/fa";
 import { FiCamera } from "react-icons/fi";
 import { MdSystemSecurityUpdate } from "react-icons/md";
-import { FiUpload } from "react-icons/fi";
 import { IoCloseOutline } from "react-icons/io5";
 import { IoMdAdd } from "react-icons/io";
-import axios from "axios";
-import quality from "../../Assets/gallery.jpg"
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { getFirestore, collection, addDoc, getDocs, doc,updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
+import app from '../../firebase'; // Ensure this is your Firebase initialization
+
+
+
 
 const Sidenavbar = () => {
+  //single page la division route agura state
   const [open, setopen] = useState("profile");
-  //popup open close state
+//popup open close state
   const [image, setimage] = useState(false);
-
-  //map function state and firebase la dataurl convert 
-  const [arrays, setarrays] = useState([]);
-  const [intern,setintern] = useState([]);
-  const [gallery,setgallery] = useState([])
- //image show agura id set panna
-  const [file, setFile] = useState(null);
-  const [file1, setFile1] = useState();
-
-  //delete process complete anathum automatic ah update agi view agum
-  const [file2, setFile2] = useState(false);
-
-  //button true ah irunthu na update btn false ah irunthuchu na submit btn
-  const [hide,sethide] = useState(false); 
-
   //update state
-  const [data,setdata] = useState("");
-  
+  const [update, setupdate] = useState("");
+  //input la file get agura state
+  const [file, setFile] = useState(null);
+  //get agura data using map function
+  const [uploadedData, setUploadedData] = useState([]);
+  const [intern, setintern] = useState([]);
+  const [gallery,setgallery] = useState([])
+  const [quality, setQuality] = useState([]);
+  const [system, setSystem] = useState([]);
+  console.log(quality);
+  //update button click pannum pothu true ah irunthuchu na update btn show agum 
+  const [hide, sethide] = useState(false);
   //popup open event
-  const [active,setactive] = useState("");
+  const [active, setactive] = useState("");
+
   
 
 
-  function dashboard(e) {
-    setopen(e);
-    console.log(e);
-  }
+ //firebase la export pantratha variable la store pannirukom
+  const storage = getStorage(app);
+  const db = getFirestore(app);
 
-  function edit(event) {
-    setimage(true);
-    sethide(false);
-    setactive(event);
+ function dashboard(event) {
+  setopen(event)
+ }
+
+ function edit(event) {
+        sethide(false);
+        setactive(event);
+        setimage(true)
   }
 
   function close() {
     setimage(false);
-  }
-
-  const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      console.log("File selected:", selectedFile.name);
-    } else {
-      console.log("No file selected");
     }
-  };
+    console.log(image);
 
-  console.log(File);   
-  
+// Upload file input
+function inputdata(e) {
+  if (e.target.files[0]) {
+    setFile(e.target.files[0]);
+  }
+}
+console.log(file);
 
+//PROFILE FIREBASESTORE
 
-
-
-
-//post create
-
-const handleUpload = async () => {
+async function submitFileUpload() {
   if (!file) {
-      console.error("No file selected to upload");
-      return;
+    console.error('No file selected for upload');
+    return;
   }
-
-    //upload create method
-const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-  if (!allowedTypes.includes(file.type)) {
-      console.error("Invalid file type. Only images are allowed.");
-      return;
-  }
-
-  try {
-      const storage = getStorage(app);
-      const storageRef = ref(storage, "images/" + file.name);
-
-      // Upload the file to Firebase storage
-      await uploadBytes(storageRef, file);
-
-      // Get the download URL for the uploaded file
-      const dataUrl = await getDownloadURL(storageRef);
-      console.log("Download URL:", dataUrl);
-
-      // Create a FormData object to send the file with the 'file' field in the form-data
-      const formData = new FormData();
-      formData.append("file", file);  // Append the actual file
-
-      // Send the form data to your backend (POST request)
-      const result = await axios.post("http://127.0.0.1:8000/upload/", formData, {
-          headers: {
-              'Content-Type': 'multipart/form-data', // Important: tell the server we're sending form-data
-          },
-      });
-      console.log(result); 
-      
-      if (result) {
-        setFile2(!file2)
-        setimage(false)
-
-      }
-      // Log the server response
-
-      // Update the frontend state with the new URL if it's not already added
-      setarrays(prev => (prev.includes(dataUrl) ? prev : [...prev, dataUrl]));
-
-      // Clear the file input field after a successful upload
-      setFile(null);
-  } catch (err) {
-    console.error("Error:", err.response?.data || err.message);
-      
-  }
-};
-
-//ViewAll 
-
-useEffect(()=>{
-    const getData = async () => {
-          try {
-            const response = await axios.get("http://127.0.0.1:8000/files/")
-            console.log(response.data);
-            setarrays(response.data)
-          } catch (error) {
-            console.error("Error uploading file:", error);
-          }
-        }
-        getData();
-  },[file2])
-
-//Delete
-
-async function deleteimg(e) {
-  console.log(e);
   
   try {
-    const result = await axios.delete(`http://127.0.0.1:8000/files/${e}/`)
-    console.log(result);
-  if (result) {
-    setFile2(!file2)
-  }
+    const storageRef = ref(storage, `dsr/${file.name}`);
+      
+      await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(storageRef);
+      console.log(downloadURL);
+      
+      const createData = await addDoc(collection(db, 'dsr'), {
+        name: file.name,
+        url: downloadURL,
+      });
+
+      console.log('File uploaded successfully:', createData.id);
+      getUploadData(); // Refresh uploaded data
   } catch (error) {
-    console.log(error);
+    console.error('Error uploading file:', error);
   }
 }
 
-//update
+  // Fetch data in Firestore ==url get pannura method
 
-async function updateimg(event,open) {
+ async function getUploadData() {
   try {
-      setimage(true); // Open the uploader popup
-      setdata(event)
-      setactive(open)
-      const res = await axios.get(`http://127.0.0.1:8000/files/${event}`);
-      const fileUrl = res.data.file;
-      console.log(fileUrl);
-      setFile1(fileUrl); // Store the file URL for display, but not for setting `value`
-      sethide(true)
-  } catch (err) {
-      console.log(err);
+    const getData = await getDocs(collection(db, 'dsr'));
+      console.log(getData);
+      
+      const data = getData.docs.map((doc) => ({
+        id: doc.id,...doc.data(),
+      }));
+      console.log(data);
+      
+      setUploadedData(data);
+  } catch (error) {
+    console.error('Error fetching data from Firestore:', error);
+
+  }
+ }
+  
+ useEffect(() => {
+    getUploadData();
+  }, []);
+console.log(uploadedData);
+
+
+// Update a document in Firestore
+async function updateFileUpload(docId) {
+  console.log(docId);
+  
+  if (!file) {
+    console.error("No file selected for update.");
+    return;
+  }
+  if (!docId) {
+    console.error("No document ID provided for update.");
+    return;
+  }
+  try {
+    console.log("Updating file for document ID:", docId);
+
+    // Step 1: Get reference to the existing document
+    const docRef = doc(db, "dsr", docId);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      console.error("Document does not exist with ID:", docId);
+      return;
+    }
+
+    const updatingData = docSnap.data();
+    console.log("Updating document data:", updatingData);
+
+     // Step 2: Delete old file from Firebase Storage if it exists
+     if (updatingData.url) {
+      const storageRef = ref(storage, `dsr/${updatingData.name}`);
+      try {
+        await deleteObject(storageRef);
+        console.log("Old file deleted successfully.");
+      } catch (error) {
+        console.warn("Error deleting old file. Proceeding with update:", error);
+      }
+    }
+
+    // Step 3: Upload the new file to Firebase Storage
+    const newFileRef = ref(storage, `dsr/${file.name}`);
+    await uploadBytes(newFileRef, file);
+    const newDownloadURL = await getDownloadURL(newFileRef);
+    console.log("New file uploaded successfully. URL:", newDownloadURL);
+    
+
+    // Step 4: Update Firestore document with new file details
+    await updateDoc(docRef, {
+      name: file.name,
+      url: newDownloadURL,
+    });
+
+    console.log("Firestore document updated successfully!");
+
+    // Step 5: Refresh uploaded data in UI
+    getUploadData();
+  
+  } catch (error) {
+    console.error("Error updating file and document:", error);
   }
 }
 
- console.log(file);
+// Example of how UpdateImg might be called
+function handleUpdate(id) {
+  console.log("Preparing to update document with ID:", id);
 
-const updatedata = async () => {
+  const findData = uploadedData.find((data) => data.id === id);
+  console.log(findData);
+  
+  if (!findData) {
+    console.error("Document data not found for ID:", id);
+    return;
+  }
+  setupdate(id); // Set setupdate to the ID of the document you're updating
+  setactive("f1"); // Activate file update section in model
+  setimage(true);   // Show image update model
+  sethide(true);    // Change button to "Update"
+}
+
+//DeleteImg 
+async function deleteData(id) {
+  try {
+    // Log the id to check if it's valid
+    console.log("Deleting document with ID:", id);
+    
+    const deleteVal = doc(db, "dsr", id);
+    await deleteDoc(deleteVal);
+    console.log('image Deleted');
+    
+    getUploadData(); // Optionally refresh the data after deletion
+  } catch (error) {
+    console.error("Error in DeleteImg function:", error);
+  }
+}
+
+// Example of how DeleteImg might be called
+// Ensure that the id passed is a valid string
+
+async function DeleteImg(id) {
+  if (id) {
+    console.log(id);
+    deleteData(id); // Call with valid document id
+  } else {
+    console.error("Invalid ID passed to DeleteImg");
+  }
+}
+
+//INTERNSHIP 
+
+async function internfileUpload() {
+  if (!file) {
+    console.error('No file selected for upload');
+    return;
+  }
+  
+  try {
+    const storageRef = ref(storage, `intern/${file.name}`);
+      
+      await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(storageRef);
+      console.log(downloadURL);
+      
+      const createData = await addDoc(collection(db, 'intern'), {
+        name: file.name,
+        url: downloadURL,
+      });
+
+      console.log('File uploaded successfully:', createData.id);
+      getInternData(); // Refresh uploaded data
+  } catch (error) {
+    console.error('Error uploading file:', error);
+  }
+}
+//get pantra method
+async function getInternData() {
+  try {
+    const getData = await getDocs(collection(db, 'intern'));
+      console.log(getData);
+      
+      const data = getData.docs.map((doc) => ({
+        id: doc.id,...doc.data(),
+      }));
+      console.log(data);
+      
+      setintern(data);
+  } catch (error) {
+    console.error('Error fetching data from Firestore:', error);
+
+  }
+ }
+
+ useEffect(() => {
+  getInternData();
+}, []);
+console.log(intern); 
+
+// Update a document in Firestore
+async function internFileupdate(docId) {
+  console.log(docId);
+  
+  if (!file) {
+    console.error("No file selected for update.");
+    return;
+  }
+  if (!docId) {
+    console.error("No document ID provided for update.");
+    return;
+  }
+  try {
+    console.log("Updating file for document ID:", docId);
+
+    // Step 1: Get reference to the existing document
+    const docRef = doc(db, "intern", docId);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      console.error("Document does not exist with ID:", docId);
+      return;
+    }
+
+    const updatingData = docSnap.data();
+    console.log("Updating document data:", updatingData);
+
+     // Step 2: Delete old file from Firebase Storage if it exists
+     if (updatingData.url) {
+      const storageRef = ref(storage, `intern/${updatingData.name}`);
+      try {
+        await deleteObject(storageRef);
+        console.log("Old file deleted successfully.");
+      } catch (error) {
+        console.warn("Error deleting old file. Proceeding with update:", error);
+      }
+    }
+
+    // Step 3: Upload the new file to Firebase Storage
+    const newFileRef = ref(storage, `intern/${file.name}`);
+    await uploadBytes(newFileRef, file);
+    const newDownloadURL = await getDownloadURL(newFileRef);
+    console.log("New file uploaded successfully. URL:", newDownloadURL);
+    
+
+    // Step 4: Update Firestore document with new file details
+    await updateDoc(docRef, {
+      name: file.name,
+      url: newDownloadURL,
+    });
+
+    console.log("Firestore document updated successfully!");
+
+    // Step 5: Refresh uploaded data in UI
+    getInternData();
+  
+  } catch (error) {
+    console.error("Error updating file and document:", error);
+  }
+}
+
+// Example of how UpdateImg might be called
+function internupdateimg(id) {
+  console.log("Preparing to update document with ID:", id);
+
+  const findData = intern.find((data) => data.id === id);
+  console.log(findData);
+  
+  if (!findData) {
+    console.error("Document data not found for ID:", id);
+    return;
+  }
+  setupdate(id); // Set setupdate to the ID of the document you're updating
+  setactive("inte"); // Activate file update section in model
+  setimage(true);   // Show image update model
+  sethide(true);    // Change button to "Update"
+}
+
+ //DeleteImg 
+async function interndeleteData(id) {
+  try {
+    // Log the id to check if it's valid
+    console.log("Deleting document with ID:", id);
+    
+    const deleteVal = doc(db, "intern", id);
+    await deleteDoc(deleteVal);
+    console.log('image Deleted');
+    
+    getInternData(); // Optionally refresh the data after deletion
+  } catch (error) {
+    console.error("Error in DeleteImg function:", error);
+  }
+}
+
+// Example of how DeleteImg might be called
+// Ensure that the id passed is a valid string
+
+async function interndeleteimg(id) {
+  if (id) {
+    console.log(id);
+    interndeleteData(id); // Call with valid document id
+  } else {
+    console.error("Invalid ID passed to DeleteImg");
+  }
+} 
+
+async function galleryFileUpload() {
+  if (!file) {
+    console.error('No file selected for upload');
+    return;
+  }
+  
+  try {
+    const storageRef = ref(storage, `gallery/${file.name}`);
+      
+      await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(storageRef);
+      console.log(downloadURL);
+      
+      const createData = await addDoc(collection(db, 'gallery'), {
+        name: file.name,
+        url: downloadURL,
+      });
+
+      console.log('File uploaded successfully:', createData.id);
+      getGalleryData(); // Refresh uploaded data
+  } catch (error) {
+    console.error('Error uploading file:', error);
+  }
+}
+
+async function getGalleryData() {
+  try {
+    const getData = await getDocs(collection(db, 'gallery'));
+      console.log(getData);
+      
+      const data = getData.docs.map((doc) => ({
+        id: doc.id,...doc.data(),
+      }));
+      console.log(data);
+      
+      setgallery(data);
+  } catch (error) {
+    console.error('Error fetching data from Firestore:', error);
+
+  }
+}
+
+useEffect(() => {
+  getGalleryData();
+}, []);
+console.log(intern); 
+
+async function galleryFileupdate(docId) {
+  console.log(docId);
+  
+  if (!file) {
+    console.error("No file selected for update.");
+    return;
+  }
+  if (!docId) {
+    console.error("No document ID provided for update.");
+    return;
+  }
+  try {
+    console.log("Updating file for document ID:", docId);
+
+    // Step 1: Get reference to the existing document
+    const docRef = doc(db, "gallery", docId);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      console.error("Document does not exist with ID:", docId);
+      return;
+    }
+
+    const updatingData = docSnap.data();
+    console.log("Updating document data:", updatingData);
+
+     // Step 2: Delete old file from Firebase Storage if it exists
+     if (updatingData.url) {
+      const storageRef = ref(storage, `gallery/${updatingData.name}`);
+      try {
+        await deleteObject(storageRef);
+        console.log("Old file deleted successfully.");
+      } catch (error) {
+        console.warn("Error deleting old file. Proceeding with update:", error);
+      }
+    }
+
+    // Step 3: Upload the new file to Firebase Storage
+    const newFileRef = ref(storage, `gallery/${file.name}`);
+    await uploadBytes(newFileRef, file);
+    const newDownloadURL = await getDownloadURL(newFileRef);
+    console.log("New file uploaded successfully. URL:", newDownloadURL);
+    
+
+    // Step 4: Update Firestore document with new file details
+    await updateDoc(docRef, {
+      name: file.name,
+      url: newDownloadURL,
+    });
+
+    console.log("Firestore document updated successfully!");
+
+    // Step 5: Refresh uploaded data in UI
+    getGalleryData();
+  
+  } catch (error) {
+    console.error("Error updating file and document:", error);
+  }
+}
+
+// Example of how UpdateImg might be called
+function galleryupdateimg(id) {
+  console.log("Preparing to update document with ID:", id);
+
+  const findData = gallery.find((data) => data.id === id);
+  console.log(findData);
+  
+  if (!findData) {
+    console.error("Document data not found for ID:", id);
+    return;
+  }
+  setupdate(id); // Set setupdate to the ID of the document you're updating
+  setactive("gallery"); // Activate file update section in model
+  setimage(true);   // Show image update model
+  sethide(true);    // Change button to "Update"
+}
+
+async function gallerydeleteData(id) {
+  try {
+    // Log the id to check if it's valid
+    console.log("Deleting document with ID:", id);
+    
+    const deleteVal = doc(db, "gallery", id);
+    await deleteDoc(deleteVal);
+    console.log('image Deleted');
+    
+    getGalleryData(); // Optionally refresh the data after deletion
+  } catch (error) {
+    console.error("Error in DeleteImg function:", error);
+  }
+}
+
+// Example of how DeleteImg might be called
+// Ensure that the id passed is a valid string
+
+async function gallerydeleteimg(id) {
+  if (id) {
+    console.log(id);
+    gallerydeleteData(id); // Call with valid document id
+  } else {
+    console.error("Invalid ID passed to DeleteImg");
+  }
+} 
+
+//Ql
+async function SubmitQualityUpload() {
   console.log(file);
   
   if (!file) {
-      console.error("No file selected to upload");
-      return;
-  }
-
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-  if (!allowedTypes.includes(file.type)) {
-      console.error("Invalid file type. Only images are allowed.");
-      return;
-  }
-
-  try {
-      const storage = getStorage(app);
-      const storageRef = ref(storage, "images/" + file.name);
-
-      await uploadBytes(storageRef, file);
-
-      const dataUrl = await getDownloadURL(storageRef);
-      console.log("Download URL:", dataUrl);
-
-      const formData = new FormData();
-      formData.append("file", file);  // Check this
-      console.log("FormData Sent:", formData);
-      console.log(data);
-
-     const result = await axios.put(`http://127.0.0.1:8000/files/${data}/`, formData, {
-    headers: {
-        'Content-Type': 'multipart/form-data',
-    },
-});
-
-
-      console.log("Result:", result); 
-      if (result) {
-        setFile2(!file2)
-        setimage(false)
-
-      } // Debug response from server
-
-      setarrays((prev) => (prev.includes(dataUrl) ? prev : [...prev, dataUrl]));
-      setFile(null);
-  } catch (err) {
-      console.error("Update Error:", err.response?.data || err.message);
-  }
-};
-
-//intern create
-
-const internUpload = async () => {
-  if (!file) {
-      console.error("No file selected to upload");
-      return;
-  }
-
-const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-  if (!allowedTypes.includes(file.type)) {
-      console.error("Invalid file type. Only images are allowed.");
-      return;
-  }
-
-  try {
-      const storage = getStorage(app);
-      const storageRef = ref(storage, "images/" + file.name);
-
-      // Upload the file to Firebase storage
-     await uploadBytes(storageRef, file);
-
-      // Get the download URL for the uploaded file
-      const dataUrl = await getDownloadURL(storageRef);
-      console.log("Download URL:", dataUrl);
-
-      // Create a FormData object to send the file with the 'file' field in the form-data
-      const formData = new FormData();
-      formData.append("file", file);  // Append the actual file
-
-      // Send the form data to your backend (POST request)
-      const result = await axios.post("http://127.0.0.1:8000/create/", formData, {
-          headers: {
-              'Content-Type': 'multipart/form-data', // Important: tell the server we're sending form-data
-          },
-      });
-      console.log(result); 
-      
-      if (result) {
-        setFile2(!file2)
-        setimage(false)
-
-      }
-      // Log the server response
-
-      // Update the frontend state with the new URL if it's not already added
-      setintern(prev => (prev.includes(dataUrl) ? prev : [...prev, dataUrl]));
-
-      // Clear the file input field after a successful upload
-      setFile(null);
-  } catch (err) {
-    console.error("Error:", err.response?.data || err.message);
-      
-  }
-};
-
-//intern ViewAll 
-
-useEffect(()=>{
-  const getData = async () => {
-        try {
-          const response = await axios.get("http://127.0.0.1:8000/internfiles/")
-          console.log(response.data);
-          setintern(response.data)
-        } catch (error) {
-          console.error("Error uploading file:", error);
-        }
-      }
-      getData();
-},[file2])
-
-//intern Delete
-
-async function interndeleteimg(e) {
-  console.log(e);
-  
-  try {
-    const result = await axios.delete(`http://127.0.0.1:8000/internfiles/${e}/`)
-    console.log(result);
-  if (result) {
-    setFile2(!file2)
-  }
-  } catch (error) {
-    console.log(error);
-  }
-}
-
-//intern update
-
-async function internupdateimg(event,open) {
-  try {
-      setimage(true); // Open the uploader popup
-      setdata(event)
-      setactive(open)
-      const res = await axios.get(`http://127.0.0.1:8000/files/${event}`);
-      const fileUrl = res.data.file;
-      console.log(fileUrl);
-      setFile1(fileUrl); // Store the file URL for display, but not for setting `value`
-      sethide(true)
-  } catch (err) {
-      console.log(err);
-  }
-}
-
- console.log(file);
-
-const internupdate = async () => {
-  console.log(file);
-  
-  if (!file) {
-      console.error("No file selected to upload");
-      return;
-  }
-
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-  if (!allowedTypes.includes(file.type)) {
-      console.error("Invalid file type. Only images are allowed.");
-      return;
-  }
-
-  try {
-      const storage = getStorage(app);
-      const storageRef = ref(storage, "images/" + file.name);
-
-      await uploadBytes(storageRef, file);
-
-      const dataUrl = await getDownloadURL(storageRef);
-      console.log("Download URL:", dataUrl);
-
-      const formData = new FormData();
-      formData.append("file", file);  // Check this
-      console.log("FormData Sent:", formData);
-      console.log(data);
-
-     const result = await axios.put(`http://127.0.0.1:8000/internfiles/${data}/`, formData, {
-    headers: {
-        'Content-Type': 'multipart/form-data',
-    },
-});
-
-
-      console.log("Result:", result); 
-      if (result) {
-        setFile2(!file2)
-        setimage(false)
-
-      } // Debug response from server
-
-      setintern((prev) => (prev.includes(dataUrl) ? prev : [...prev, dataUrl]));
-      setFile(null);
-  } catch (err) {
-      console.error("Update Error:", err.response?.data || err.message);
-  }
-};
-
-//gallery post
-
-const galleryUpload = async () => {
-  if (!file) {
-      console.error("No file selected to upload");
-      return;
-  }
-
-const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-  if (!allowedTypes.includes(file.type)) {
-      console.error("Invalid file type. Only images are allowed.");
-      return;
-  }
-
-  try {
-      const storage = getStorage(app);
-      const storageRef = ref(storage, "images/" + file.name);
-
-      // Upload the file to Firebase storage
-     await uploadBytes(storageRef, file);
-
-      // Get the download URL for the uploaded file
-      const dataUrl = await getDownloadURL(storageRef);
-      console.log("Download URL:", dataUrl);
-
-      // Create a FormData object to send the file with the 'file' field in the form-data
-      const formData = new FormData();
-      formData.append("file", file);  // Append the actual file
-
-      // Send the form data to your backend (POST request)
-      const result = await axios.post("http://127.0.0.1:8000/post/", formData, {
-          headers: {
-              'Content-Type': 'multipart/form-data', // Important: tell the server we're sending form-data
-          },
-      });
-      console.log(result); 
-      
-      if (result) {
-        setFile2(!file2)
-        setimage(false)
-
-      }
-      // Log the server response
-
-      // Update the frontend state with the new URL if it's not already added
-      setgallery(prev => (prev.includes(dataUrl) ? prev : [...prev, dataUrl]));
-
-      // Clear the file input field after a successful upload
-      setFile(null);
-  } catch (err) {
-    console.error("Error:", err.response?.data || err.message);
-      
-  }
-};
-
-//gallery ViewAll 
-
-useEffect(()=>{
-  const getData = async () => {
-        try {
-          const response = await axios.get("http://127.0.0.1:8000/galleryfiles/")
-          console.log(response.data);
-          setgallery(response.data)
-        } catch (error) {
-          console.error("Error uploading file:", error);
-        }
-      }
-      getData();
-},[file2])
-
-// gallery Delete
-
-async function gallerydeleteimg(e) {
-  console.log(e);
-  
-  try {
-    const result = await axios.delete(`http://127.0.0.1:8000/galleryfiles/${e}/`)
-    console.log(result);
-  if (result) {
-    setFile2(!file2)
-  }
-  } catch (error) {
-    console.log(error);
-  }
-}
-
-// gallery update
-
-async function galleryupdateimg(event,open) {
-try {
-    setimage(true); // Open the uploader popup
-    setdata(event)
-    setactive(open)
-    const res = await axios.get(`http://127.0.0.1:8000/galleryfiles/${event}`);
-    const fileUrl = res.data.file;
-    console.log(fileUrl);
-    setFile1(fileUrl); // Store the file URL for display, but not for setting `value`
-    sethide(true)
-} catch (err) {
-    console.log(err);
-}
-}
-
-console.log(file);
-
-const galleryupdate = async () => {
-console.log(file);
-
-if (!file) {
-    console.error("No file selected to upload");
+    console.error('No file selected for upload');
     return;
+  }
+  try {
+    const storageRef = ref(storage, `quality/${file.name}`);
+      
+      await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(storageRef);
+      console.log(downloadURL);
+      
+      const createData = await addDoc(collection(db, 'quality'), {
+        name: file.name,
+        url: downloadURL,
+      });
+
+      console.log('File uploaded successfully:', createData.id);
+      getQualityData(); // Refresh uploaded data
+  } catch (error) {
+    console.error('Error uploading file:', error);
+  }
 }
 
-const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-if (!allowedTypes.includes(file.type)) {
-    console.error("Invalid file type. Only images are allowed.");
+  // Fetch data in Firestore ==url get pannura method
+  async function getQualityData() {
+    try {
+      const getData = await getDocs(collection(db, 'quality'));
+        console.log(getData);
+        
+        const data = getData.docs.map((doc) => ({
+          id: doc.id,...doc.data(),
+        }));
+        console.log(data);
+        
+        setQuality(data);
+    } catch (error) {
+      console.error('Error fetching data from Firestore:', error);
+  
+    }
+   }
+    
+   useEffect(() => {
+    getQualityData();
+    }, []);
+  console.log(quality);
+
+
+  //DeleteImg 
+async function QualityDeleteData(id) {
+  try {
+    // Log the id to check if it's valid
+    console.log("Deleting document with ID:", id);
+    
+    const deleteVal = doc(db, "quality", id);
+    await deleteDoc(deleteVal);
+    console.log('image Deleted');
+    
+    getQualityData(); // Optionally refresh the data after deletion
+  } catch (error) {
+    console.error("Error in DeleteImg function:", error);
+  }
+}
+
+// Example of how DeleteImg might be called
+// Ensure that the id passed is a valid string
+
+async function QualityDeleteImg(id) {
+  if (id) {
+    console.log(id);
+    QualityDeleteData(id); // Call with valid document id
+  } else {
+    console.error("Invalid ID passed to DeleteImg");
+  }
+}
+
+// Update a document in Firestore
+async function UpdateQualityData(docId) {
+  if (!file) {
+    console.error("No file selected for update.");
     return;
+  }
+  if (!docId) {
+    console.error("No document ID provided for update.");
+    return;
+  }
+  try {
+    console.log("Updating file for document ID:", docId);
+
+    // Step 1: Get reference to the existing document
+    const docRef = doc(db, "quality", docId);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      console.error("Document does not exist with ID:", docId);
+      return;
+    }
+
+    const updatingData = docSnap.data();
+    console.log("Updating document data:", updatingData);
+
+     // Step 2: Delete old file from Firebase Storage if it exists
+     if (updatingData.url) {
+      const storageRef = ref(storage, `quality/${updatingData.name}`);
+      try {
+        await deleteObject(storageRef);
+        console.log("Old file deleted successfully.");
+      } catch (error) {
+        console.warn("Error deleting old file. Proceeding with update:", error);
+      }
+    }
+
+    // Step 3: Upload the new file to Firebase Storage
+    const newFileRef = ref(storage, `quality/${file.name}`);
+    await uploadBytes(newFileRef, file);
+    const newDownloadURL = await getDownloadURL(newFileRef);
+    console.log("New file uploaded successfully. URL:", newDownloadURL);
+    
+
+    // Step 4: Update Firestore document with new file details
+    await updateDoc(docRef, {
+      name: file.name,
+      url: newDownloadURL,
+    });
+
+    console.log("Firestore document updated successfully!");
+
+    // Step 5: Refresh uploaded data in UI
+    getQualityData();
+  
+  } catch (error) {
+    console.error("Error updating file and document:", error);
+  }
 }
 
-try {
-    const storage = getStorage(app);
-    const storageRef = ref(storage, "images/" + file.name);
+// Example of how UpdateImg might be called
+function QualityUpdateImg(id) {
+  console.log("Preparing to update document with ID:", id);
 
-    await uploadBytes(storageRef, file);
-
-    const dataUrl = await getDownloadURL(storageRef);
-    console.log("Download URL:", dataUrl);
-
-    const formData = new FormData();
-    formData.append("file", file);  // Check this
-    console.log("FormData Sent:", formData);
-    console.log(data);
-
-   const result = await axios.put(`http://127.0.0.1:8000/galleryfiles/${data}/`, formData, {
-  headers: {
-      'Content-Type': 'multipart/form-data',
-  },
-});
-
-
-    console.log("Result:", result); 
-    if (result) {
-      setFile2(!file2)
-      setimage(false)
-
-    } // Debug response from server
-
-    setgallery((prev) => (prev.includes(dataUrl) ? prev : [...prev, dataUrl]));
-    setFile(null);
-} catch (err) {
-    console.error("Update Error:", err.response?.data || err.message);
+  const findData = quality.find((data) => data.id === id);
+  console.log(findData);
+  
+  if (!findData) {
+    console.error("Document data not found for ID:", id);
+    return;
+  }
+  setupdate(id); // Set setupdate to the ID of the document you're updating
+  setactive("f2"); // Activate file update section in modal
+  setimage(true);   // Show image update modal
+  sethide(true);    // Change button to "Update"
 }
-};
 
+
+//sys
+
+async function SubmitSystemUpload() {
+  if (!file) {
+    console.error('No file selected for upload');
+    return;
+  }
+  try {
+    const storageRef = ref(storage, `system/${file.name}`);
+      
+      await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(storageRef);
+      console.log(downloadURL);
+      
+      const createData = await addDoc(collection(db, 'system'), {
+        name: file.name,
+        url: downloadURL,
+      });
+
+      console.log('File uploaded successfully:', createData.id);
+      getsystemData(); // Refresh uploaded data
+  } catch (error) {
+    console.error('Error uploading file:', error);
+  }
+}
+
+  // Fetch data in Firestore ==url get pannura method
+  async function getsystemData() {
+    try {
+      const getData = await getDocs(collection(db, 'system'));
+        console.log(getData);
+        
+        const data = getData.docs.map((doc) => ({
+          id: doc.id,...doc.data(),
+        }));
+        console.log(data);
+        
+        setSystem(data);
+    } catch (error) {
+      console.error('Error fetching data from Firestore:', error);
+  
+    }
+   }
+
+   useEffect(() => {
+    getsystemData();
+    }, []);
+  console.log(system);
+
+  // Update a document in Firestore
+async function UpdateSyatemData(docId) {
+  if (!file) {
+    console.error("No file selected for update.");
+    return;
+  }
+  if (!docId) {
+    console.error("No document ID provided for update.");
+    return;
+  }
+  try {
+    console.log("Updating file for document ID:", docId);
+
+    // Step 1: Get reference to the existing document
+    const docRef = doc(db, "system", docId);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      console.error("Document does not exist with ID:", docId);
+      return;
+    }
+
+    const updatingData = docSnap.data();
+    console.log("Updating document data:", updatingData);
+
+     // Step 2: Delete old file from Firebase Storage if it exists
+     if (updatingData.url) {
+      const storageRef = ref(storage, `system/${updatingData.name}`);
+      try {
+        await deleteObject(storageRef);
+        console.log("Old file deleted successfully.");
+      } catch (error) {
+        console.warn("Error deleting old file. Proceeding with update:", error);
+      }
+    }
+
+    // Step 3: Upload the new file to Firebase Storage
+    const newFileRef = ref(storage, `system/${file.name}`);
+    await uploadBytes(newFileRef, file);
+    const newDownloadURL = await getDownloadURL(newFileRef);
+    console.log("New file uploaded successfully. URL:", newDownloadURL);
+    
+
+    // Step 4: Update Firestore document with new file details
+    await updateDoc(docRef, {
+      name: file.name,
+      url: newDownloadURL,
+    });
+
+    console.log("Firestore document updated successfully!");
+
+    // Step 5: Refresh uploaded data in UI
+    getsystemData();
+  
+  } catch (error) {
+    console.error("Error updating file and document:", error);
+  }
+}
+
+// Example of how UpdateImg might be called
+function SystemUpdateImg(id) {
+  console.log("Preparing to update document with ID:", id);
+
+  const findData = system.find((data) => data.id === id);
+  console.log(findData);
+  
+  if (!findData) {
+    console.error("Document data not found for ID:", id);
+    return;
+  }
+  setupdate(id); // Set setupdate to the ID of the document you're updating
+  setactive("f3"); // Activate file update section in modal
+  setimage(true);   // Show image update modal
+  sethide(true);    // Change button to "Update"
+}
+
+  //DeleteImg 
+  async function SystemDeleteData(id) {
+    try {
+      // Log the id to check if it's valid
+      console.log("Deleting document with ID:", id);
+      
+      const deleteVal = doc(db, "system", id);
+      await deleteDoc(deleteVal);
+      console.log('image Deleted');
+      
+      getsystemData(); // Optionally refresh the data after deletion
+    } catch (error) {
+      console.error("Error in DeleteImg function:", error);
+    }
+  }
+
+async function SystemDeleteImg(id) {
+  if (id) {
+    console.log(id);
+    SystemDeleteData(id); // Call with valid document id
+  } else {
+    console.error("Invalid ID passed to DeleteImg");
+  }
+}
+
+//   //popup open close state
+//   const [image, setimage] = useState(false);
+
+//   //map function state and firebase la dataurl convert
+//   const [arrays, setarrays] = useState([]);
+//   const [quality, setquality] = useState([]);
+//   const [system, setsystem] = useState([]);
+//   const [intern, setintern] = useState([]);
+//   const [gallery, setgallery] = useState([]);
+//   //image show agura id set panna
+//   const [file, setFile] = useState(null);
+//   const [file1, setFile1] = useState();
+
+//   //delete process complete anathum automatic ah update agi view agum
+//   const [file2, setFile2] = useState(false);
+
+//   //button true ah irunthu na update btn false ah irunthuchu na submit btn
+//   const [hide, sethide] = useState(false);
+
+//   //update state
+//   const [data, setdata] = useState("");
+
+//   //popup open event
+//   const [active, setactive] = useState("");
+
+
+
+
+ 
+
+
+//   function dashboard(e) {
+//     setopen(e);
+//     console.log(e);
+//   }
+
+//   function edit(event) {
+//     setimage(true);
+//     sethide(false);
+//     setactive(event);
+//   }
+
+//   function close() {
+//     setimage(false);
+//   }
+
+//   const handleFileChange = (e) => {
+//     const selectedFile = e.target.files[0];
+//     if (selectedFile) {
+//       setFile(selectedFile);
+//       console.log("File selected:", selectedFile.name);
+//     } else {
+//       console.log("No file selected");
+//     }
+    
+ 
+//   };
+
+//   console.log(File);
+
+//   //post create
+
+//   const handleUpload = async (title) => {
+//     if (!title || title.trim() === "") {
+//       alert("Title is required");
+//       return;
+//     }
+
+//     //upload create method
+//     const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
+//     if (!allowedTypes.includes(file.type)) {
+//       console.error("Invalid file type. Only images are allowed.");
+//       return;
+//     }
+
+//     try {
+
+    
+    
+
+//       const storage = getStorage(db);
+//       const storageRef = ref(storage, "images/" + file.name);
+
+//       // Upload the file to Firebase storage
+//       console.log("Uploading file to Firebase storage...");
+//       await uploadBytes(storageRef, file);
+//       console.log("File Upload Successfully");
+      
+
+//       // Get the download URL for the uploaded file
+//       const dataUrl = await getDownloadURL(storageRef);
+//       console.log("Download URL:", dataUrl);
+
+//       // Create a FormData object to send the file with the 'file' field in the form-data
+//       const formData = new FormData();
+//       formData.append("file", file); // Append the actual file
+
+//       // Send the form data to your backend (POST request)
+//       const result = await axios.post(
+//         "http://127.0.0.1:8000/upload/",
+//         formData,
+//         {
+//           headers: {
+//             "Content-Type": "multipart/form-data", // Important: tell the server we're sending form-data
+//           },
+//         }
+//       );
+//       console.log(result);
+
+//       if (result) {
+//         setFile2(!file2);
+//         setimage(false);
+//       }
+//       // Log the server response
+
+//       // Update the frontend state with the new URL if it's not already added
+//       setarrays((prev) => (prev.includes(dataUrl) ? prev : [...prev, dataUrl]));
+
+//       // Clear the file input field after a successful upload
+//       setFile(null);
+//     } catch (err) {
+//       console.error("Error:", err.response?.data || err.message);
+//     }
+//   };
+  
+
+//   //ViewAll
+
+//   useEffect(() => {
+//     const getData = async () => {
+//       try {
+//         const response = await axios.get("http://127.0.0.1:8000/files/");
+//         console.log(response.data);
+//         setarrays(response.data);
+//       } catch (error) {
+//         console.error("Error uploading file:", error);
+//       }
+//     };
+//     getData();
+//   }, [file2]);
+
+//   //Delete
+
+//   async function deleteimg(e) {
+//     console.log(e);
+
+//     try {
+//       const result = await axios.delete(`http://127.0.0.1:8000/files/${e}/`);
+//       console.log(result);
+//       if (result) {
+//         setFile2(!file2);
+//       }
+//     } catch (error) {
+//       console.log(error);
+//     }
+//   }
+
+//   //update
+
+//   async function updateimg(event, open) {
+//     try {
+//       setimage(true); // Open the uploader popup
+//       setdata(event);
+//       setactive(open);
+//       const res = await axios.get(`http://127.0.0.1:8000/files/${event}`);
+//       const fileUrl = res.data.file;
+//       console.log(fileUrl);
+//       setFile1(fileUrl); // Store the file URL for display, but not for setting `value`
+//       sethide(true);
+//     } catch (err) {
+//       console.log(err);
+//     }
+//   }
+
+//   console.log(file);
+
+//   const updatedata = async () => {
+//     console.log(file);
+
+//     if (!file) {
+//       console.error("No file selected to upload");
+//       return;
+//     }
+
+//     const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
+//     if (!allowedTypes.includes(file.type)) {
+//       console.error("Invalid file type. Only images are allowed.");
+//       return;
+//     }
+
+//     try {
+//       const storage = getStorage(db);
+//       const storageRef = ref(storage, "images/" + file.name);
+
+//       console.log("Uploading file to Firebase storage...");
+//       await uploadBytes(storageRef, file);
+//       console.log("File Upload Successfully");
+
+//       const dataUrl = await getDownloadURL(storageRef);
+//       console.log("Download URL:", dataUrl);
+
+//       const formData = new FormData();
+//       formData.append("file", file); // Check this
+//       console.log("FormData Sent:", formData);
+//       console.log(data);
+
+//       const result = await axios.put(
+//         `http://127.0.0.1:8000/files/${data}/`,
+//         formData,
+//         {
+//           headers: {
+//             "Content-Type": "multipart/form-data",
+//           },
+//         }
+//       );
+
+//       console.log("Result:", result);
+//       if (result) {
+//         setFile2(!file2);
+//         setimage(false);
+//       } // Debug response from server
+
+//       setarrays((prev) => (prev.includes(dataUrl) ? prev : [...prev, dataUrl]));
+//       setFile(null);
+//     } catch (err) {
+//       console.error("Update Error:", err.response?.data || err.message);
+//     }
+//   };
+
+//   //intern create
+
+//   const internUpload = async () => {
+//     if (!file) {
+//       console.error("No file selected to upload");
+//       return;
+//     }
+
+//     const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
+//     if (!allowedTypes.includes(file.type)) {
+//       console.error("Invalid file type. Only images are allowed.");
+//       return;
+//     }
+
+//     try {
+//       const storage = getStorage(db);
+//       const storageRef = ref(storage, "images/" + file.name);
+
+//       // Upload the file to Firebase storage
+//       console.log("Uploading file to Firebase storage...");
+//       await uploadBytes(storageRef, file);
+//       console.log("File Upload Successfully");
+
+//       // Get the download URL for the uploaded file
+//       const dataUrl = await getDownloadURL(storageRef);
+//       console.log("Download URL:", dataUrl);
+
+//       // Create a FormData object to send the file with the 'file' field in the form-data
+//       const formData = new FormData();
+//       formData.append("file", file); // Append the actual file
+
+//       // Send the form data to your backend (POST request)
+//       const result = await axios.post(
+//         "http://127.0.0.1:8000/create/",
+//         formData,
+//         {
+//           headers: {
+//             "Content-Type": "multipart/form-data", // Important: tell the server we're sending form-data
+//           },
+//         }
+//       );
+//       console.log(result);
+
+//       if (result) {
+//         setFile2(!file2);
+//         setimage(false);
+//       }
+//       // Log the server response
+
+//       // Update the frontend state with the new URL if it's not already added
+//       setintern((prev) => (prev.includes(dataUrl) ? prev : [...prev, dataUrl]));
+
+//       // Clear the file input field after a successful upload
+//       setFile(null);
+//     } catch (err) {
+//       console.error("Error:", err.response?.data || err.message);
+//     }
+//   };
+
+//   //intern ViewAll
+
+//   useEffect(() => {
+//     const getData = async () => {
+//       try {
+//         const response = await axios.get("http://127.0.0.1:8000/internfiles/");
+//         console.log(response.data);
+//         setintern(response.data);
+//       } catch (error) {
+//         console.error("Error uploading file:", error);
+//       }
+//     };
+//     getData();
+//   }, [file2]);
+
+//   //intern Delete
+
+//   async function interndeleteimg(e) {
+//     console.log(e);
+
+//     try {
+//       const result = await axios.delete(
+//         `http://127.0.0.1:8000/internfiles/${e}/`
+//       );
+//       console.log(result);
+//       if (result) {
+//         setFile2(!file2);
+//       }
+//     } catch (error) {
+//       console.log(error);
+//     }
+//   }
+
+//   //intern update
+
+//   async function internupdateimg(event, open) {
+//     try {
+//       setimage(true); // Open the uploader popup
+//       setdata(event);
+//       setactive(open);
+//       const res = await axios.get(`http://127.0.0.1:8000/internfiles/${event}`);
+//       const fileUrl = res.data.file;
+//       console.log(fileUrl);
+//       setFile1(fileUrl); // Store the file URL for display, but not for setting `value`
+//       sethide(true);
+//     } catch (err) {
+//       console.log(err);
+//     }
+//   }
+
+//   console.log(file);
+
+//   const internupdate = async () => {
+//     console.log(file);
+
+//     if (!file) {
+//       console.error("No file selected to upload");
+//       return;
+//     }
+
+//     const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
+//     if (!allowedTypes.includes(file.type)) {
+//       console.error("Invalid file type. Only images are allowed.");
+//       return;
+//     }
+
+//     try {
+//       const storage = getStorage(db);
+//       const storageRef = ref(storage, "images/" + file.name);
+
+//       await uploadBytes(storageRef, file);
+
+//       const dataUrl = await getDownloadURL(storageRef);
+//       console.log("Download URL:", dataUrl);
+
+//       const formData = new FormData();
+//       formData.append("file", file); // Check this
+//       console.log("FormData Sent:", formData);
+//       console.log(data);
+
+//       const result = await axios.put(
+//         `http://127.0.0.1:8000/internfiles/${data}/`,
+//         formData,
+//         {
+//           headers: {
+//             "Content-Type": "multipart/form-data",
+//           },
+//         }
+//       );
+
+//       console.log("Result:", result);
+//       if (result) {
+//         setFile2(!file2);
+//         setimage(false);
+//       } // Debug response from server
+
+//       setintern((prev) => (prev.includes(dataUrl) ? prev : [...prev, dataUrl]));
+//       setFile(null);
+//     } catch (err) {
+//       console.error("Update Error:", err.response?.data || err.message);
+//     }
+//   };
+
+//   //gallery post
+
+//   const galleryUpload = async () => {
+//     if (!file) {
+//       console.error("No file selected to upload");
+//       return;
+//     }
+
+//     const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
+//     if (!allowedTypes.includes(file.type)) {
+//       console.error("Invalid file type. Only images are allowed.");
+//       return;
+//     }
+
+//     try {
+//       const storage = getStorage(db);
+//       const storageRef = ref(storage, "images/" + file.name);
+
+//       // Upload the file to Firebase storage
+//       console.log("Uploading file to Firebase storage...");
+//       await uploadBytes(storageRef, file);
+//       console.log("File Upload Successfully");
+
+//       // Get the download URL for the uploaded file
+//       const dataUrl = await getDownloadURL(storageRef);
+//       console.log("Download URL:", dataUrl);
+
+//       // Create a FormData object to send the file with the 'file' field in the form-data
+//       const formData = new FormData();
+//       formData.append("file", file); // Append the actual file
+
+//       // Send the form data to your backend (POST request)
+//       const result = await axios.post("http://127.0.0.1:8000/post/", formData, {
+//         headers: {
+//           "Content-Type": "multipart/form-data", // Important: tell the server we're sending form-data
+//         },
+//       });
+//       console.log(result);
+
+//       if (result) {
+//         setFile2(!file2);
+//         setimage(false);
+//       }
+//       // Log the server response
+
+//       // Update the frontend state with the new URL if it's not already added
+//       setgallery((prev) =>
+//         prev.includes(dataUrl) ? prev : [...prev, dataUrl]
+//       );
+
+//       // Clear the file input field after a successful upload
+//       setFile(null);
+//     } catch (err) {
+//       console.error("Error:", err.response?.data || err.message);
+//     }
+//   };
+
+//   //gallery ViewAll
+
+//   useEffect(() => {
+//     const getData = async () => {
+//       try {
+//         const response = await axios.get("http://127.0.0.1:8000/galleryfiles/");
+//         console.log(response.data);
+//         setgallery(response.data);
+//       } catch (error) {
+//         console.error("Error uploading file:", error);
+//       }
+//     };
+//     getData();
+//   }, [file2]);
+
+//   // gallery Delete
+
+//   async function gallerydeleteimg(e) {
+//     console.log(e);
+
+//     try {
+//       const result = await axios.delete(
+//         `http://127.0.0.1:8000/galleryfiles/${e}/`
+//       );
+//       console.log(result);
+//       if (result) {
+//         setFile2(!file2);
+//       }
+//     } catch (error) {
+//       console.log(error);
+//     }
+//   }
+
+//   // gallery update
+
+//   async function galleryupdateimg(event, open) {
+//     try {
+//       setimage(true); // Open the uploader popup
+//       setdata(event);
+//       setactive(open);
+//       const res = await axios.get(
+//         `http://127.0.0.1:8000/galleryfiles/${event}`
+//       );
+//       const fileUrl = res.data.file;
+//       console.log(fileUrl);
+//       setFile1(fileUrl); // Store the file URL for display, but not for setting `value`
+//       sethide(true);
+//     } catch (err) {
+//       console.log(err);
+//     }
+//   }
+
+//   console.log(file);
+
+//   const galleryupdate = async () => {
+//     console.log(file);
+
+//     if (!file) {
+//       console.error("No file selected to upload");
+//       return;
+//     }
+
+//     const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
+//     if (!allowedTypes.includes(file.type)) {
+//       console.error("Invalid file type. Only images are allowed.");
+//       return;
+//     }
+
+//     try {
+//       const storage = getStorage(db);
+//       const storageRef = ref(storage, "images/" + file.name);
+
+//       console.log("Uploading file to Firebase storage...");
+//       await uploadBytes(storageRef, file);
+//       console.log("File Upload Successfully");
+
+//       const dataUrl = await getDownloadURL(storageRef);
+//       console.log("Download URL:", dataUrl);
+
+//       const formData = new FormData();
+//       formData.append("file", file); // Check this
+//       console.log("FormData Sent:", formData);
+//       console.log(data);
+
+//       const result = await axios.put(
+//         `http://127.0.0.1:8000/galleryfiles/${data}/`,
+//         formData,
+//         {
+//           headers: {
+//             "Content-Type": "multipart/form-data",
+//           },
+//         }
+//       );
+
+//       console.log("Result:", result);
+//       if (result) {
+//         setFile2(!file2);
+//         setimage(false);
+//       } // Debug response from server
+
+//       setgallery((prev) =>
+//         prev.includes(dataUrl) ? prev : [...prev, dataUrl]
+//       );
+//       setFile(null);
+//     } catch (err) {
+//       console.error("Update Error:", err.response?.data || err.message);
+//     }
+//   };
+
+//   //ql create
+
+//   const qualltyUpload = async () => {
+//     if (!file) {
+//       console.error("No file selected to upload");
+//       return;
+//     }
+
+//     const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
+//     if (!allowedTypes.includes(file.type)) {
+//       console.error("Invalid file type. Only images are allowed.");
+//       return;
+//     }
+
+//     try {
+//       const storage = getStorage(db);
+//       const storageRef = ref(storage, "images/" + file.name);
+
+//       // Upload the file to Firebase storage
+//       console.log("Uploading file to Firebase storage...");
+//       await uploadBytes(storageRef, file);
+//       console.log("File Upload Successfully");
+
+//       // Get the download URL for the uploaded file
+//       const dataUrl = await getDownloadURL(storageRef);
+//       console.log("Download URL:", dataUrl);
+
+//       // Create a FormData object to send the file with the 'file' field in the form-data
+//       const formData = new FormData();
+//       formData.append("file", file); // Append the actual file
+
+//       // Send the form data to your backend (POST request)
+//       const result = await axios.post(
+//         "http://127.0.0.1:8000/creates/",
+//         formData,
+//         {
+//           headers: {
+//             "Content-Type": "multipart/form-data", // Important: tell the server we're sending form-data
+//           },
+//         }
+//       );
+//       console.log(result);
+
+//       if (result) {
+//         setFile2(!file2);
+//         setimage(false);
+//       }
+//       // Log the server response
+
+//       // Update the frontend state with the new URL if it's not already added
+//       setquality((prev) =>
+//         prev.includes(dataUrl) ? prev : [...prev, dataUrl]
+//       );
+
+//       // Clear the file input field after a successful upload
+//       setFile(null);
+//     } catch (err) {
+//       console.error("Error:", err.response?.data || err.message);
+//     }
+//   };
+
+//   const qualitydata = async () => {
+//     console.log(file);
+
+//     if (!file) {
+//       console.error("No file selected to upload");
+//       return;
+//     }
+
+//     const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
+//     if (!allowedTypes.includes(file.type)) {
+//       console.error("Invalid file type. Only images are allowed.");
+//       return;
+//     }
+
+//     try {
+//       const storage = getStorage(db);
+//       const storageRef = ref(storage, "images/" + file.name);
+
+//       console.log("Uploading file to Firebase storage...");
+//       await uploadBytes(storageRef, file);
+//       console.log("File Upload Successfully");
+
+//       const dataUrl = await getDownloadURL(storageRef);
+//       console.log("Download URL:", dataUrl);
+
+//       const formData = new FormData();
+//       formData.append("file", file); // Check this
+//       console.log("FormData Sent:", formData);
+//       console.log(data);
+
+//       const result = await axios.put(
+//         `http://127.0.0.1:8000/qualityfiles/${data}/`,
+//         formData,
+//         {
+//           headers: {
+//             "Content-Type": "multipart/form-data",
+//           },
+//         }
+//       );
+
+//       console.log("Result:", result);
+//       if (result) {
+//         setFile2(!file2);
+//         setimage(false);
+//       } // Debug response from server
+
+//       setquality((prev) =>
+//         prev.includes(dataUrl) ? prev : [...prev, dataUrl]
+//       );
+//       setFile(null);
+//     } catch (err) {
+//       console.error("Update Error:", err.response?.data || err.message);
+//     }
+//   };
+
+//   useEffect(() => {
+//     const getData = async () => {
+//       try {
+//         const response = await axios.get("http://127.0.0.1:8000/qualityfiles/");
+//         console.log(response.data);
+//         setquality(response.data);
+//       } catch (error) {
+//         console.error("Error uploading file:", error);
+//       }
+//     };
+//     getData();
+//   }, [file2]);
+
+//   async function qualityupdateimg(event, open) {
+//     try {
+//       setimage(true); // Open the uploader popup
+//       setdata(event);
+//       setactive(open);
+//       const res = await axios.get(`http://127.0.0.1:8000/qualityfiles/${event}`);
+//       const fileUrl = res.data.file;
+//       console.log(fileUrl);
+//       setFile1(fileUrl); // Store the file URL for display, but not for setting `value`
+//       sethide(true);
+//     } catch (err) {
+//       console.log(err);
+//     }
+//   }
+
+//   async function qualitydeleteimg(e) {
+//     console.log(e);
+
+//     try {
+//       const result = await axios.delete(
+//         `http://127.0.0.1:8000/qualityfiles/${e}/`
+//       );
+//       console.log(result);
+//       if (result) {
+//         setFile2(!file2);
+//       }
+//     } catch (error) {
+//       console.log(error);
+//     }
+//   }
+// //syaterm
+//   const systemUpload = async () => {
+//     if (!file) {
+//       console.error("No file selected to upload");
+//       return;
+//     }
+
+//     const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
+//     if (!allowedTypes.includes(file.type)) {
+//       console.error("Invalid file type. Only images are allowed.");
+//       return;
+//     }
+
+//     try {
+//       const storage = getStorage(db);
+//       const storageRef = ref(storage, "images/" + file.name);
+
+//       // Upload the file to Firebase storage
+//       console.log("Uploading file to Firebase storage...");
+//       await uploadBytes(storageRef, file);
+//       console.log("File Upload Successfully");
+
+//       // Get the download URL for the uploaded file
+//       const dataUrl = await getDownloadURL(storageRef);
+//       console.log("Download URL:", dataUrl);
+
+//       // Create a FormData object to send the file with the 'file' field in the form-data
+//       const formData = new FormData();
+//       formData.append("file", file); // Append the actual file
+
+//       // Send the form data to your backend (POST request)
+//       const result = await axios.post(
+//         "http://127.0.0.1:8000/dsrcreate/",
+//         formData,
+//         {
+//           headers: {
+//             "Content-Type": "multipart/form-data", // Important: tell the server we're sending form-data
+//           },
+//         }
+//       );
+//       console.log(result);
+
+//       if (result) {
+//         setFile2(!file2);
+//         setimage(false);
+//       }
+//       // Log the server response
+
+//       // Update the frontend state with the new URL if it's not already added
+//       setsystem((prev) =>
+//         prev.includes(dataUrl) ? prev : [...prev, dataUrl]
+//       );
+
+//       // Clear the file input field after a successful upload
+//       setFile(null);
+//     } catch (err) {
+//       console.error("Error:", err.response?.data || err.message);
+//     }
+//   };
+
+//   const systemdata = async () => {
+//     console.log(file);
+
+//     if (!file) {
+//       console.error("No file selected to upload");
+//       return;
+//     }
+
+//     const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
+//     if (!allowedTypes.includes(file.type)) {
+//       console.error("Invalid file type. Only images are allowed.");
+//       return;
+//     }
+
+//     try {
+//       const storage = getStorage(db);
+//       const storageRef = ref(storage, "images/" + file.name);
+
+//       await uploadBytes(storageRef, file);
+
+//       const dataUrl = await getDownloadURL(storageRef);
+//       console.log("Download URL:", dataUrl);
+
+//       const formData = new FormData();
+//       formData.append("file", file); // Check this
+//       console.log("FormData Sent:", formData);
+//       console.log(data);
+
+//       const result = await axios.put(
+//         `http://127.0.0.1:8000/dsrfiles/${data}/`,
+//         formData,
+//         {
+//           headers: {
+//             "Content-Type": "multipart/form-data",
+//           },
+//         }
+//       );
+
+//       console.log("Result:", result);
+//       if (result) {
+//         setFile2(!file2);
+//         setimage(false);
+//       } // Debug response from server
+
+//       setsystem((prev) =>
+//         prev.includes(dataUrl) ? prev : [...prev, dataUrl]
+//       );
+//       setFile(null);
+//     } catch (err) {
+//       console.error("Update Error:", err.response?.data || err.message);
+//     }
+//   };
+
+//   useEffect(() => {
+//     const getData = async () => {
+//       try {
+//         const response = await axios.get("http://127.0.0.1:8000/dsrfiles/");
+//         console.log(response.data);
+//         setsystem(response.data);
+//       } catch (error) {
+//         console.error("Error uploading file:", error);
+//       }
+//     };
+//     getData();
+//   }, [file2]);
+
+//   async function systemupdateimg(event, open) {
+//     try {
+//       setimage(true); // Open the uploader popup
+//       setdata(event);
+//       setactive(open);
+//       const res = await axios.get(`http://127.0.0.1:8000/dsrfiles/${event}`);
+//       const fileUrl = res.data.file;
+//       console.log(fileUrl);
+//       setFile1(fileUrl); // Store the file URL for display, but not for setting `value`
+//       sethide(true);
+//     } catch (err) {
+//       console.log(err);
+//     }
+//   }
+
+//   async function systemdeleteimg(e) {
+//     console.log(e);
+
+//     try {
+//       const result = await axios.delete(
+//         `http://127.0.0.1:8000/dsrfiles/${e}/`
+//       );
+//       console.log(result);
+//       if (result) {
+//         setFile2(!file2);
+//       }
+//     } catch (error) {
+//       console.log(error);
+//     }
+//   }
 
   return (
     <>
-
       <div className="sidenavbar">
         <div className="sidenav_left">
           <div className="sidenav_logo">
             <img src={logo} alt="" />
           </div>
           <div className="sidenav_list">
-  
-
             <div className="list1" onClick={() => dashboard("profile")}>
               <p>
                 <CgProfile className="list_i" />
@@ -567,10 +1735,10 @@ try {
               <p>
                 <MdSystemSecurityUpdate className="list_i" />
               </p>
-              <h4>DSR systems</h4>
+              <h4>DSR Systems</h4>
             </div>
 
-            <div className="list1" onClick={() => dashboard("internshi")}>
+            <div className="list1" onClick={() => dashboard("inte")}>
               <p>
                 <FaInternetExplorer className="list_i" />
               </p>
@@ -585,33 +1753,39 @@ try {
             </div>
           </div>
         </div>
-   
+
         <div className="sidenav_right">
-           <div className="right_head">
+          <div className="right_head">
             {open == "profile" && (
               <div className="right_profile">
                 <div className="pro">
                   <h2>PROFILE</h2>
-                  <p>
+                   <p>
                     <IoMdAdd className="add_i" onClick={() => edit("f1")} />
-                  </p>
+                  </p> 
                 </div>
-                {arrays.map(function (data) {
+                <div className="pro_grid">
+                {uploadedData.map(function (data) {
                   return (
                     <div className="ch" key={data.id}>
-                      <img src={data.file} alt="" />
+                      <img src={data.url} alt="" />
                       <div className="profile_btn">
-                        <button onClick={()=>updateimg(data.id,"f1")} >Update</button>
-                        <button onClick={()=>deleteimg(data.id)}>Delete</button>
+                        <button onClick={() => handleUpdate(data.id)}>
+                          Update
+                        </button>
+                        <button onClick={() => DeleteImg(data.id)}>
+                          Delete
+                        </button>
                       </div>
                     </div>
                   );
                 })}
+                </div>
               </div>
             )}
-          </div> 
+          </div>
 
-          {open == "quality" && (
+            {open == "quality" && (
             <div class="right_head">
               <div className="quality">
                 <div className="pro">
@@ -620,20 +1794,29 @@ try {
                     <IoMdAdd className="add_i" onClick={() => edit("f2")} />
                   </p>
                 </div>
-               <div className="qua">
-                  <img src={quality} alt="" />
-                  
+                <div className="qua_grid">
+                {quality.map(function (data) {
+                  return(
+                  <div className="qua" key={data.id}>
+                  <img src={data.url} alt="" />
+
                   <div className="profile_btn">
-                    <button>Update</button>
-                    <button>Delete</button>
+                    <button onClick={() => QualityUpdateImg(data.id)}>
+                      Update
+                    </button>
+                    <button onClick={() => QualityDeleteImg(data.id)}>
+                      Delete
+                    </button>
                   </div>
-                  </div>
-              
+                </div>
+                  )
+                })}
+                </div>
               </div>
             </div>
-          )}
+          )} 
 
-          {open == "system" && (
+           {open == "system" && (
             <div className="system">
               <div className="pro">
                 <h2>SYSTEMS</h2>
@@ -641,164 +1824,172 @@ try {
                   <IoMdAdd className="add_i" onClick={() => edit("f3")} />
                 </p>
               </div>
-             <div className="sys">
-                  <img src={quality} alt="" />
+              <div className="sys_grid">
+              {system.map(function (data) {
+                return(
+                <div className="sys" key={data.id}>
+                <img src={data.url} alt="" />
 
-                  <div className="profile_btn">
-                    <button>Update</button>
-                    <button>Delete</button>
-                  </div>
-                  </div>
-            
+                <div className="profile_btn">
+                  <button onClick={() => SystemUpdateImg(data.id,"f3")}>Update</button>
+                  <button onClick={() => SystemDeleteImg(data.id)}>Delete</button>
+                </div>
+              </div>
+                )
+              })}
+              </div>
             </div>
-          )}
+          )} 
 
-          {open == "internshi" && (
+          {open == "inte" && (
             <div className="internship">
               <div className="pro">
                 <h2>INTERNSHIP</h2>
                 <p>
-                  <IoMdAdd className="add_i" onClick={() => edit("f4")} />
+                  <IoMdAdd className="add_i" onClick={() => edit("inte")} />
                 </p>
               </div>
-              
-                <div className="gridcheck">
+
+              <div className="gridcheck">
                 {intern.map(function name(data) {
-                  return(
-                    <div className="internship2" key ={data.id}>
-                    <div className="internship1">
-                      <img src={data.file} alt="" />
-                      <div className="edit_btn1" onClick={() => edit("f4")}>
-                      <p>
-                        <FiUpload />
-                      </p>
-                </div>
-                <div className="intern_btn">
-                    <button onClick={()=>internupdateimg(data.id,"f4")}>Update</button>
-                    <button onClick={()=>interndeleteimg(data.id)}>Delete</button>
-                </div>
-                </div>
-                </div>
-                  )
+                  return (
+                    <div className="internship2" key={data.id}>
+                      <div className="internship1">
+                        <img src={data.url} alt="" />
+                          
+                        
+                        <div className="intern_btn">
+                          <button
+                            onClick={() => internupdateimg(data.id)}
+                          >
+                            Update
+                          </button>
+                          <button onClick={() => interndeleteimg(data.id)}>
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
                 })}
-                </div>
-                 
-              
+              </div>
             </div>
-          )}
+          )} 
 
           {open == "gallery" && (
-            <div className="gallery" key={data.id}>
+            <div className="gallery" >
               <div className="pro">
                 <h2>OUR SERVICE</h2>
                 <p>
-                  <IoMdAdd className="add_i" onClick={() => edit("f5")} />
+                  <IoMdAdd className="add_i" onClick={() => edit("gallery")} />
                 </p>
               </div>
-              
-            {gallery.map(function(data) {
-              return(
-                <div className="gallery1" key ={data.id}>
-                    <img src={data.file} alt="" />
-                    <div className="edit_btn" onClick={() => edit("f5")}>
-                      <p>
-                        <FiUpload />
-                      </p>
-                    </div>
+
+              <div className="gallery_grid">
+              {gallery.map(function (data) {
+                return (
+                  <div className="gallery1" key={data.id}>
+                    <img src={data.url} alt="" />
+                    
                     <div className="profile_btn1">
-                      <button onClick={()=>galleryupdateimg(data.id,"f5")}>Update</button>
-                      <button onClick={()=>gallerydeleteimg(data.id)}>Delete</button>
+                      <button onClick={() => galleryupdateimg(data.id)}>
+                        Update
+                      </button>
+                      <button onClick={() => gallerydeleteimg(data.id)}>
+                        Delete
+                      </button>
                     </div>
                   </div>
-              )
-            })}
-              
+                );
+              })}
+              </div>
             </div>
-          )}
+          )}   
         </div>
 
         <div className={image ? "popup1" : "popup"}>
-          {file1 && (
-        <div>
-          <p>Current File: {file1}</p>
-          <img src={file1} alt="Selected File Preview" style={{ maxWidth: '100px' }} />
-        </div>
-        )}
 
           <div className="popup_head1">
+            {active == "f1" && (
+              <div className="popup_head">
+                <h3>Image Uploader</h3>
+                <div className="close_btn">
+                  <p>
+                    <IoCloseOutline className="close_i" onClick={()=>close()}/>
+                  </p>
+                </div>
+                <input type="file"  onChange={inputdata}  />
+                <div className="popup_btn">
+                  {!hide && <button onClick={submitFileUpload}>Submit</button>}
+                  {hide && <button onClick={()=>updateFileUpload(update)}>Update</button>}
+                </div>
+              </div>
+             )}
 
-             {active == "f1" && <div className="popup_head">
-              <p>pro</p>
-              <h3>Image Uploader</h3>
-              <div className="close_btn" onClick={() => close()}>
-                
-                <p><IoCloseOutline className="close_i" /></p>
+              {active == "f2" && (
+              <div className="popup_head">
+             <h3>Image Uploader</h3>
+                <div className="close_btn" onClick={() => close()}>
+                  <p>
+                    <IoCloseOutline className="close_i" />
+                  </p>
+                </div>
+                <input type="file" onChange={inputdata} />
+                <div className="popup_btn">
+                  {!hide && <button onClick={SubmitQualityUpload}>Submit</button>}
+                  {hide && <button onClick={ ()=>UpdateQualityData(update)}>Update</button>}
+                </div>
               </div>
-                <input type="file" onChange={handleFileChange}/>
-              <div className="popup_btn" >
-             {!hide && <button onClick={handleUpload}>Submit</button>}
-              {hide&& <button onClick={updatedata}>Update</button>}
-              </div>
-            </div>} 
+            )} 
 
-            {active == "f2" && <div className="popup_head">
-              <p>qua</p>
-              <h3>Image Uploader</h3>
-              <div className="close_btn" onClick={() => close()}>
-                
-                <p><IoCloseOutline className="close_i" /></p>
+            {active == "f3" && (
+              <div className="popup_head">
+                <h3>Image Uploader</h3>
+                <div className="close_btn" onClick={() => close()}>
+                  <p>
+                    <IoCloseOutline className="close_i" />
+                  </p>
+                </div>
+                <input type="file" onChange={inputdata} />
+                <div className="popup_btn">
+                  {!hide && <button onClick={SubmitSystemUpload}>Submit</button>}
+                  {hide && <button onClick={()=>UpdateSyatemData(update)}>Update</button>}
+                </div>
               </div>
-                <input type="file" onChange={handleFileChange}/>
-              <div className="popup_btn" >
-             {!hide && <button onClick={handleUpload}>Submit</button>}
-              {hide&& <button onClick={updatedata}>Update</button>}
-              </div>
-            </div>}
+            )} 
 
-             {active == "f3" && <div className="popup_head">
-              <p>sys</p>
-              <h3>Image Uploader</h3>
-              <div className="close_btn" onClick={() => close()}>
-                
-                <p><IoCloseOutline className="close_i" /></p>
+             {active == "f4" && (
+              <div className="popup_head">
+                <h3>Image Uploader</h3>
+                <div className="close_btn" onClick={() => close()}>
+                  <p>
+                    <IoCloseOutline className="close_i" />
+                  </p>
+                </div>
+                <input type="file" onChange={inputdata} />
+                <div className="popup_btn">
+                  {!hide && <button onClick={internfileUpload}>Submit</button>}
+                  {hide && <button onClick={()=>internFileupdate(update)}>Update</button>}
+                </div>
               </div>
-                <input type="file" onChange={handleFileChange}/>
-              <div className="popup_btn" >
-             {!hide && <button onClick={handleUpload}>Submit</button>}
-              {hide&& <button onClick={updatedata}>Update</button>}
-              </div>
-            </div>} 
+            )} 
 
-            {active == "f4" && <div className="popup_head">
-              <p>intern</p>
-              <h3>Image Uploader</h3>
-              <div className="close_btn" onClick={() => close()}>
-                
-                <p><IoCloseOutline className="close_i" /></p>
+             {active == "gallery" && (
+              <div className="popup_head">
+                <h3>Image Uploader</h3>
+                <div className="close_btn" onClick={() => close()}>
+                  <p>
+                    <IoCloseOutline className="close_i" />
+                  </p>
+                </div>
+                <input type="file" onChange={inputdata} />
+                <div className="popup_btn">
+                  {!hide && <button onClick={galleryFileUpload}>Submit</button>}
+                  {hide && <button onClick={()=>galleryFileupdate(update)}>Update</button>}
+                </div>
               </div>
-                <input type="file" onChange={handleFileChange}/>
-              <div className="popup_btn" >
-             {!hide && <button onClick={internUpload}>Submit</button>}
-              {hide && <button onClick={internupdate}>Update</button>}
-              </div>
-            </div>}
-
-             {active == "f5" && <div className="popup_head">
-              <p>gal</p>
-              <h3>Image Uploader</h3>
-              <div className="close_btn" onClick={() => close()}>
-                
-                <p><IoCloseOutline className="close_i" /></p>
-              </div>
-                <input type="file" onChange={handleFileChange}/>
-              <div className="popup_btn" >
-             {!hide && <button onClick={galleryUpload}>Submit</button>}
-              {hide&& <button onClick={galleryupdate}>Update</button>}
-              </div>
-            </div>} 
-
+            )}   
           </div>
-
         </div>
       </div>
     </>
