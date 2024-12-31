@@ -346,7 +346,7 @@ function internupdateimg(id) {
     return;
   }
   setupdate(id); // Set setupdate to the ID of the document you're updating
-  setactive("inte"); // Activate file update section in model
+  setactive("f4"); // Activate file update section in model
   setimage(true);   // Show image update model
   sethide(true);    // Change button to "Update"
 }
@@ -498,7 +498,7 @@ function galleryupdateimg(id) {
     return;
   }
   setupdate(id); // Set setupdate to the ID of the document you're updating
-  setactive("gallery"); // Activate file update section in model
+  setactive("f5"); // Activate file update section in model
   setimage(true);   // Show image update model
   sethide(true);    // Change button to "Update"
 }
@@ -1846,7 +1846,7 @@ async function SystemDeleteImg(id) {
               <div className="pro">
                 <h2>INTERNSHIP</h2>
                 <p>
-                  <IoMdAdd className="add_i" onClick={() => edit("inte")} />
+                  <IoMdAdd className="add_i" onClick={() => edit("f4")} />
                 </p>
               </div>
 
@@ -1881,7 +1881,7 @@ async function SystemDeleteImg(id) {
               <div className="pro">
                 <h2>OUR SERVICE</h2>
                 <p>
-                  <IoMdAdd className="add_i" onClick={() => edit("gallery")} />
+                  <IoMdAdd className="add_i" onClick={() => edit("f5")} />
                 </p>
               </div>
 
@@ -1974,7 +1974,7 @@ async function SystemDeleteImg(id) {
               </div>
             )} 
 
-             {active == "gallery" && (
+             {active == "f5" && (
               <div className="popup_head">
                 <h3>Image Uploader</h3>
                 <div className="close_btn" onClick={() => close()}>
@@ -1997,3 +1997,6 @@ async function SystemDeleteImg(id) {
 };
 
 export default Sidenavbar;
+
+
+
