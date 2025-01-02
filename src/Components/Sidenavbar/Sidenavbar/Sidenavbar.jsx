@@ -18,6 +18,7 @@ import { ToastContainer,toast } from "react-toastify";
 const Sidenavbar = () => {
   //single page la division route agura state
   const [open, setopen] = useState("profile");
+  
 //popup open close state
   const [image, setimage] = useState(false);
   //update state
@@ -33,8 +34,11 @@ const Sidenavbar = () => {
   console.log(quality);
   //update button click pannum pothu true ah irunthuchu na update btn show agum 
   const [hide, sethide] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // Loading state for the button
+
   //popup open event
   const [active, setactive] = useState("");
+  const [updates, setupdates] = useState(false);
 
   
 
@@ -52,6 +56,7 @@ const Sidenavbar = () => {
         setactive(event);
         setimage(true)
         setFile(null)
+        setIsLoading(false)
   }
 
   function close() {
@@ -64,7 +69,6 @@ console.log(file);
 function inputdata(e) {
   if (e.target.files[0]) {
     setFile(e.target.files[0]);
-    // setFileName(selectedFile.name); // Set the file name to display
   }
 }
 console.log(file);
@@ -72,18 +76,19 @@ console.log(file);
 //PROFILE FIREBASESTORE
 
 async function submitFileUpload() {
-  let toastId; // Declare toastId to track the toast
+  let toastId; 
 
   if (!file) {   
     console.error('No file selected for upload');
-    toastId = toast("No file selected for upload");  // Store toast ID
+    toastId = toast("No file selected for upload");  
     return;
   }
 
   try {
     const storageRef = ref(storage, `dsr/${file.name}`);
     
-    toastId = toast("Uploading..."); // Show a loading message before uploading
+    toastId = toast("Uploading..."); 
+    setIsLoading(true);
 
     await uploadBytes(storageRef, file);
     const downloadURL = await getDownloadURL(storageRef);
@@ -96,18 +101,18 @@ async function submitFileUpload() {
 
     console.log('File uploaded successfully:', createData.id);
     document.querySelector('input[type="file"]').value = ''
+
     getUploadData(); // Refresh uploaded data
+
     toast.update(toastId, {
       render: "File uploaded successfully",
       type: "success",
-      autoClose: 3000,
+      autoClose: 1000,
       isLoading: false,
     });
-
   setTimeout(() => {
   setimage(false)
-  
-}, 3000);
+}, 1000);
   } catch (error) {
     console.error('Error uploading file:', error);
     toast.update(toastId, {
@@ -116,6 +121,8 @@ async function submitFileUpload() {
       isLoading: false,
       autoClose: 3000,
     });
+    setIsLoading(false); // Re-enable the submit button after successful upload
+
   }
 }
 
@@ -178,7 +185,8 @@ async function updateFileUpload(docId) {
       const storageRef = ref(storage, `dsr/${updatingData.name}`);
       try {
     toastId = toast("Uploading...");
-        
+    setupdates(true)
+
         await deleteObject(storageRef);
         console.log("Old file deleted successfully.");
       } catch (error) {
@@ -202,7 +210,6 @@ async function updateFileUpload(docId) {
 
     console.log("Firestore document updated successfully!");
     document.querySelector('input[type="file"]').value = ''
-
 
     // Step 5: Refresh uploaded data in UI
     toast.update(toastId, {
@@ -244,6 +251,8 @@ function handleUpdate(id) {
   setactive("f1"); // Activate file update section in model
   setimage(true);   // Show image update model
   sethide(true);    // Change button to "Update"  
+  setupdates(false)
+
 
 }
 
@@ -277,19 +286,21 @@ let toastId;
       isLoading: true,  // Show the loading state while deleting
     });
    deleteData(id); // Call with valid document id
-   toast.update(toastId, {
-    render: "File has been deleted",
-    type: "success", // Success type since the deletion was successful
-    autoClose: 3000,  // Close after 3 seconds
-    isLoading: false, // Hide the loading spinner
-  });
+  setTimeout(() => {
+    toast.update(toastId, {
+      render: "File has been deleted",
+      type: "success", 
+      autoClose: 3000,  
+      isLoading: false, 
+    });
+  }, 1500);
   } else {
     console.error("Invalid ID passed to DeleteImg");
     toast.update(toastId, {
       render: "Error deleting file", // Error message
       type: "error", // Error type
       autoClose: 3000, // Close after 3 seconds
-      isLoading: false, // Hide loading spinner
+      isLoading: false, 
     });
   }
   
@@ -308,6 +319,8 @@ async function internfileUpload() {
   try {
     const storageRef = ref(storage, `intern/${file.name}`);
       toastId = toast("Uploading.....")
+      setIsLoading(true)
+
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
       console.log(downloadURL);
@@ -341,6 +354,8 @@ async function internfileUpload() {
       isLoading: false,
       autoClose: 3000,
     });
+    setIsLoading(false)
+
   }
 }
 //get pantra method
@@ -399,6 +414,7 @@ async function internFileupdate(docId) {
      if (updatingData.url) {
       const storageRef = ref(storage, `intern/${updatingData.name}`);
       toastId = toast("Uploading...")
+      setupdates(true)
       try {
         await deleteObject(storageRef);
         console.log("Old file deleted successfully.");
@@ -461,6 +477,8 @@ function internupdateimg(id) {
   setactive("f4"); // Activate file update section in model
   setimage(true);   // Show image update model
   sethide(true);    // Change button to "Update"
+  setupdates(false)
+
 
 }
 
@@ -492,12 +510,14 @@ async function interndeleteimg(id) {
       isLoading: true,  // Show the loading state while deleting
     });
     interndeleteData(id); // Call with valid document id
-    toast.update(toastId, {
-      render: "File has been deleted",
-      type: "success", // Success type since the deletion was successful
-      autoClose: 3000,  // Close after 3 seconds
-      isLoading: false, // Hide the loading spinner
-    });
+    setTimeout(() => {
+      toast.update(toastId, {
+        render: "File has been deleted",
+        type: "success", 
+        autoClose: 3000,  
+        isLoading: false, 
+      });
+    }, 1500);
   } else {
     console.error("Invalid ID passed to DeleteImg");
     toast.update(toastId, {
@@ -513,13 +533,14 @@ async function galleryFileUpload() {
   let toastId;
   if (!file) {
     console.error('No file selected for upload');
-    
+    toastId = toast("No file selected for upload")
     return;
   }
   
   try {
     const storageRef = ref(storage, `gallery/${file.name}`);
       toastId = toast("Uploading....")
+      setIsLoading(true)
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
       console.log(downloadURL);
@@ -550,6 +571,8 @@ async function galleryFileUpload() {
       isLoading: false,
       autoClose: 3000,
     });
+    setIsLoading(false)
+
   }
 }
 
@@ -606,6 +629,7 @@ async function galleryFileupdate(docId) {
      if (updatingData.url) {
       const storageRef = ref(storage, `gallery/${updatingData.name}`);
       toastId = toast("Uploading....")
+      setupdates(true)
       try {
         await deleteObject(storageRef);
         console.log("Old file deleted successfully.");
@@ -669,6 +693,8 @@ function galleryupdateimg(id) {
   setactive("f5"); // Activate file update section in model
   setimage(true);   // Show image update model
   sethide(true);    // Change button to "Update"
+  setupdates(false)
+
 }
 
 async function gallerydeleteData(id) {
@@ -698,12 +724,14 @@ async function gallerydeleteimg(id) {
       autoClose: false, // Don't auto close yet because we're still in progress
       isLoading: true,  // Show the loading state while deleting
     });
-    toast.update(toastId, {
-      render: "File has been deleted",
-      type: "success", // Success type since the deletion was successful
-      autoClose: 3000,  // Close after 3 seconds
-      isLoading: false, // Hide the loading spinner
-    });
+    setTimeout(() => {
+      toast.update(toastId, {
+        render: "File has been deleted",
+        type: "success", 
+        autoClose: 3000,  
+        isLoading: false, 
+      });
+    }, 1500);
   } else {
     console.error("Invalid ID passed to DeleteImg");
     toast.update(toastId, {
@@ -722,11 +750,14 @@ async function SubmitQualityUpload() {
   
   if (!file) {
     console.error('No file selected for upload');
+    toastId = toast("No file selected for upload")
     return;
   }
   try {
     const storageRef = ref(storage, `quality/${file.name}`);
       toastId = toast("Uploading....")
+      setIsLoading(true)
+
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
       console.log(downloadURL);
@@ -758,6 +789,7 @@ async function SubmitQualityUpload() {
       isLoading: false,
       autoClose: 3000,
     });
+    setIsLoading(false)
   }
 }
 
@@ -813,12 +845,14 @@ async function QualityDeleteImg(id) {
       isLoading: true,  // Show the loading state while deleting
     });
     QualityDeleteData(id); // Call with valid document id
-    toast.update(toastId, {
-      render: "File has been deleted",
-      type: "success", // Success type since the deletion was successful
-      autoClose: 3000,  // Close after 3 seconds
-      isLoading: false, // Hide the loading spinner
-    });
+    setTimeout(() => {
+      toast.update(toastId, {
+        render: "File has been deleted",
+        type: "success", 
+        autoClose: 3000,  
+        isLoading: false, 
+      });
+    }, 1500);
   } else {
     console.error("Invalid ID passed to DeleteImg");
     toast.update(toastId, {
@@ -860,6 +894,7 @@ async function UpdateQualityData(docId) {
      if (updatingData.url) {
       const storageRef = ref(storage, `quality/${updatingData.name}`);
       toastId = toast("Uploading....")
+      setupdates(true)
       try {
         await deleteObject(storageRef);
         console.log("Old file deleted successfully.");
@@ -924,6 +959,8 @@ function QualityUpdateImg(id) {
   setactive("f2"); // Activate file update section in modal
   setimage(true);   // Show image update modal
   sethide(true);    // Change button to "Update"
+  setupdates(false)
+
 }
 
 
@@ -933,11 +970,13 @@ async function SubmitSystemUpload() {
   let toastId;
   if (!file) {
     console.error('No file selected for upload');
+    toastId = toast("No file selected for upload")
     return;
   }
   try {
     const storageRef = ref(storage, `system/${file.name}`);
       toastId = toast("Uploading...")
+      setIsLoading(true)
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
       console.log(downloadURL);
@@ -969,6 +1008,7 @@ async function SubmitSystemUpload() {
       autoClose : 3000,
       isLoading : false
     })
+    setIsLoading(false)
   }
 }
 
@@ -996,7 +1036,7 @@ async function SubmitSystemUpload() {
   console.log(system);
 
   // Update a document in Firestore
-async function UpdateSyatemData(docId) {
+async function UpdateSystemData(docId) {
   let toastId;
   if (!file) {
     console.error("No file selected for update.");
@@ -1025,6 +1065,7 @@ async function UpdateSyatemData(docId) {
      if (updatingData.url) {
       const storageRef = ref(storage, `system/${updatingData.name}`);
       toastId = toast("Uploading....")
+      setupdates(true)
       try {
         await deleteObject(storageRef);
         console.log("Old file deleted successfully.");
@@ -1088,6 +1129,8 @@ function SystemUpdateImg(id) {
   setactive("f3"); // Activate file update section in modal
   setimage(true);   // Show image update modal
   sethide(true);    // Change button to "Update"
+  setupdates(false)
+
 }
 
   //DeleteImg 
@@ -1115,12 +1158,15 @@ async function SystemDeleteImg(id) {
       isLoading: true,  // Show the loading state while deleting
     });
     SystemDeleteData(id); // Call with valid document id
-    toast.update(toastId, {
-      render: "File has been deleted",
-      type: "success", // Success type since the deletion was successful
-      autoClose: 3000,  // Close after 3 seconds
-      isLoading: false, // Hide the loading spinner
-    });
+
+    setTimeout(() => {
+      toast.update(toastId, {
+        render: "File has been deleted",
+        type: "success", 
+        autoClose: 3000,  
+        isLoading: false, 
+      });
+    }, 1500);
   } else {
     console.error("Invalid ID passed to DeleteImg");
     toast.update(toastId, {
@@ -2218,8 +2264,10 @@ async function SystemDeleteImg(id) {
                 </div>
                 <input type="file"  onChange={inputdata} name={file} />
                 <div className="popup_btn">
-                  {!hide && <button onClick={submitFileUpload}>Submit</button>}
-                  {hide && <button onClick={()=>updateFileUpload(update)}>Update</button>}
+                  {!hide && isLoading && <button>Submited</button>}
+                  {!hide && !isLoading  && <button onClick={submitFileUpload}>Submit</button>}
+                  {hide && !updates &&<button onClick={()=>updateFileUpload(update)  }>Update</button>}
+                  {hide && updates &&<button>Updated</button>}
                 </div>
               </div>
              )}
@@ -2234,9 +2282,11 @@ async function SystemDeleteImg(id) {
                 </div>
                 <input type="file" onChange={inputdata} />
                 <div className="popup_btn">
-                  {!hide && <button onClick={SubmitQualityUpload}>Submit</button>}
-                  {hide && <button onClick={ ()=>UpdateQualityData(update)}>Update</button>}
-                </div>
+                {!hide && isLoading && <button>Submited</button>}
+                {!hide && !isLoading  && <button onClick={SubmitQualityUpload}>Submit</button>}
+                {hide && !updates &&<button onClick={ ()=>UpdateQualityData(update)}>Update</button>}
+                {hide && updates &&<button>Updated</button>}
+</div>
               </div>
             )} 
 
@@ -2250,8 +2300,11 @@ async function SystemDeleteImg(id) {
                 </div>
                 <input type="file" onChange={inputdata} />
                 <div className="popup_btn">
-                  {!hide && <button onClick={SubmitSystemUpload}>Submit</button>}
-                  {hide && <button onClick={()=>UpdateSyatemData(update)}>Update</button>}
+                {!hide && isLoading && <button>Submited</button>}
+                {!hide && !isLoading  && <button onClick={SubmitSystemUpload}>Submit</button>}
+                {hide && !updates &&<button onClick={ ()=>UpdateSystemData(update)}>Update</button>}
+                {hide && updates &&<button>Updated</button>}
+
                 </div>
               </div>
             )} 
@@ -2266,8 +2319,11 @@ async function SystemDeleteImg(id) {
                 </div>
                 <input type="file" onChange={inputdata} />
                 <div className="popup_btn">
-                  {!hide && <button onClick={internfileUpload}>Submit</button>}
-                  {hide && <button onClick={()=>internFileupdate(update)}>Update</button>}
+                {!hide && isLoading && <button>Submited</button>}
+                {!hide && !isLoading  && <button onClick={internfileUpload}>Submit</button>}
+                {hide && !updates &&<button onClick={ ()=>internFileupdate(update)}>Update</button>}
+                {hide && updates &&<button>Updated</button>}
+
                 </div>
               </div>
             )} 
@@ -2282,8 +2338,11 @@ async function SystemDeleteImg(id) {
                 </div>
                 <input type="file" onChange={inputdata} />
                 <div className="popup_btn">
-                  {!hide && <button onClick={galleryFileUpload}>Submit</button>}
-                  {hide && <button onClick={()=>galleryFileupdate(update)}>Update</button>}
+                {!hide && isLoading && <button>Submited</button>}
+                {!hide && !isLoading  && <button onClick={galleryFileUpload}>Submit</button>}
+                {hide && !updates &&<button onClick={ ()=>galleryFileupdate(update)}>Update</button>}
+                {hide && updates &&<button>Updated</button>}
+
                 </div>
               </div>
             )}   
