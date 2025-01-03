@@ -39,6 +39,7 @@ const Sidenavbar = () => {
   //popup open event
   const [active, setactive] = useState("");
   const [updates, setupdates] = useState(false);
+  const [disbalebtn, setdisbalebtn] = useState(false)
 
   
 
@@ -57,6 +58,7 @@ const Sidenavbar = () => {
         setimage(true)
         setFile(null)
         setIsLoading(false)
+        setdisbalebtn(false)
   }
 
   function close() {
@@ -72,7 +74,6 @@ function inputdata(e) {
   }
 }
 console.log(file);
-
 //PROFILE FIREBASESTORE
 
 async function submitFileUpload() {
@@ -103,7 +104,7 @@ async function submitFileUpload() {
     document.querySelector('input[type="file"]').value = ''
 
     getUploadData(); // Refresh uploaded data
-
+    setdisbalebtn(!disbalebtn)
     toast.update(toastId, {
       render: "File uploaded successfully",
       type: "success",
@@ -128,6 +129,7 @@ async function submitFileUpload() {
 
 console.log(file);
 
+console.log(disbalebtn);
 
   // Fetch data in Firestore ==url get pannura method
 
@@ -160,6 +162,8 @@ async function updateFileUpload(docId) {
   let toastId;
   if (!file) {
     console.error("No file selected for update.");
+    toastId = toast("No file selected for update");  
+
     return;
   }
   if (!docId) {
@@ -184,7 +188,7 @@ async function updateFileUpload(docId) {
      if (updatingData.url) {
       const storageRef = ref(storage, `dsr/${updatingData.name}`);
       try {
-    toastId = toast("Uploading...");
+    toastId = toast("Updating...");
     setupdates(true)
 
         await deleteObject(storageRef);
@@ -212,6 +216,9 @@ async function updateFileUpload(docId) {
     document.querySelector('input[type="file"]').value = ''
 
     // Step 5: Refresh uploaded data in UI
+
+
+    setdisbalebtn(!disbalebtn)
     toast.update(toastId, {
       render: "File updated successfully",
       type: "success",
@@ -252,7 +259,8 @@ function handleUpdate(id) {
   setimage(true);   // Show image update model
   sethide(true);    // Change button to "Update"  
   setupdates(false)
-
+  setdisbalebtn(false)
+  setFile(null)
 
 }
 
@@ -335,6 +343,7 @@ async function internfileUpload() {
   
 
       getInternData(); // Refresh uploaded data
+      setdisbalebtn(!disbalebtn)
       toast.update(toastId, {
         render: "File uploaded successfully",
         type: "success",
@@ -389,6 +398,8 @@ async function internFileupdate(docId) {
   
   if (!file) {
     console.error("No file selected for update.");
+    toastId = toast("No file selected for update");  
+
     return;
   }
   if (!docId) {
@@ -413,7 +424,7 @@ async function internFileupdate(docId) {
      // Step 2: Delete old file from Firebase Storage if it exists
      if (updatingData.url) {
       const storageRef = ref(storage, `intern/${updatingData.name}`);
-      toastId = toast("Uploading...")
+      toastId = toast("Updating...")
       setupdates(true)
       try {
         await deleteObject(storageRef);
@@ -439,6 +450,7 @@ async function internFileupdate(docId) {
     console.log("Firestore document updated successfully!");
     document.querySelector('input[type="file"]').value = ''
     // Step 5: Refresh uploaded data in UI
+    setdisbalebtn(!disbalebtn)
     toast.update(toastId, {
       render: "File updated successfully",
       type: "success",
@@ -478,7 +490,8 @@ function internupdateimg(id) {
   setimage(true);   // Show image update model
   sethide(true);    // Change button to "Update"
   setupdates(false)
-
+  setdisbalebtn(false)
+  setFile(null)
 
 }
 
@@ -553,6 +566,8 @@ async function galleryFileUpload() {
       console.log('File uploaded successfully:', createData.id);
       document.querySelector('input[type="file"]').value = ''
       getGalleryData(); // Refresh uploaded data
+      setdisbalebtn(!disbalebtn)
+
       toast.update(toastId, {
         render: "File uploaded successfully",
         type: "success",
@@ -603,7 +618,8 @@ async function galleryFileupdate(docId) {
   let toastId;  
   if (!file) {
     console.error("No file selected for update.");
-    
+    toastId = toast("No file selected for update");  
+
     return;
   }
   if (!docId) {
@@ -628,7 +644,7 @@ async function galleryFileupdate(docId) {
      // Step 2: Delete old file from Firebase Storage if it exists
      if (updatingData.url) {
       const storageRef = ref(storage, `gallery/${updatingData.name}`);
-      toastId = toast("Uploading....")
+      toastId = toast("Updating....")
       setupdates(true)
       try {
         await deleteObject(storageRef);
@@ -694,7 +710,9 @@ function galleryupdateimg(id) {
   setimage(true);   // Show image update model
   sethide(true);    // Change button to "Update"
   setupdates(false)
-
+  
+  setdisbalebtn(false)
+  setFile(null)
 }
 
 async function gallerydeleteData(id) {
@@ -769,8 +787,10 @@ async function SubmitQualityUpload() {
 
       console.log('File uploaded successfully:', createData.id);
       document.querySelector('input[type="file"]').value = ''
-
       getQualityData(); // Refresh uploaded data
+      setdisbalebtn(!disbalebtn)
+
+
       toast.update(toastId, {
         render: "File uploaded successfully",
         type: "success",
@@ -869,6 +889,8 @@ async function UpdateQualityData(docId) {
   let toastId;
   if (!file) {
     console.error("No file selected for update.");
+    toastId = toast("No file selected for update");  
+
     return;
   }
   if (!docId) {
@@ -893,7 +915,7 @@ async function UpdateQualityData(docId) {
      // Step 2: Delete old file from Firebase Storage if it exists
      if (updatingData.url) {
       const storageRef = ref(storage, `quality/${updatingData.name}`);
-      toastId = toast("Uploading....")
+      toastId = toast("Updating....")
       setupdates(true)
       try {
         await deleteObject(storageRef);
@@ -918,7 +940,7 @@ async function UpdateQualityData(docId) {
 
     console.log("Firestore document updated successfully!");
     document.querySelector('input[type="file"]').value = ''
-
+    
 
     // Step 5: Refresh uploaded data in UI
     toast.update(toastId, {
@@ -960,6 +982,8 @@ function QualityUpdateImg(id) {
   setimage(true);   // Show image update modal
   sethide(true);    // Change button to "Update"
   setupdates(false)
+  setdisbalebtn(false)
+  setFile(null)
 
 }
 
@@ -988,7 +1012,7 @@ async function SubmitSystemUpload() {
 
       console.log('File uploaded successfully:', createData.id);
       document.querySelector('input[type="file"]').value = ''
-
+      setdisbalebtn(!disbalebtn)
       toast.update(toastId,{
         render : "File Upload successfully",
         type : "success",
@@ -1040,6 +1064,8 @@ async function UpdateSystemData(docId) {
   let toastId;
   if (!file) {
     console.error("No file selected for update.");
+    toastId = toast("No file selected for update");  
+
     return;
   }
   if (!docId) {
@@ -1064,7 +1090,7 @@ async function UpdateSystemData(docId) {
      // Step 2: Delete old file from Firebase Storage if it exists
      if (updatingData.url) {
       const storageRef = ref(storage, `system/${updatingData.name}`);
-      toastId = toast("Uploading....")
+      toastId = toast("Updating....")
       setupdates(true)
       try {
         await deleteObject(storageRef);
@@ -1089,7 +1115,7 @@ async function UpdateSystemData(docId) {
 
     console.log("Firestore document updated successfully!");
     document.querySelector('input[type="file"]').value = ''
-
+    
     // Step 5: Refresh uploaded data in UI
     toast.update(toastId,{
       render : "File updated successfully",
@@ -1130,7 +1156,8 @@ function SystemUpdateImg(id) {
   setimage(true);   // Show image update modal
   sethide(true);    // Change button to "Update"
   setupdates(false)
-
+  setdisbalebtn(false)
+  setFile(null)
 }
 
   //DeleteImg 
@@ -2264,10 +2291,8 @@ async function SystemDeleteImg(id) {
                 </div>
                 <input type="file"  onChange={inputdata} name={file} />
                 <div className="popup_btn">
-                  {!hide && isLoading && <button>Submited</button>}
-                  {!hide && !isLoading  && <button onClick={submitFileUpload}>Submit</button>}
-                  {hide && !updates &&<button onClick={()=>updateFileUpload(update)  }>Update</button>}
-                  {hide && updates &&<button>Updated</button>}
+                  {!hide && !isLoading  && <button onClick={submitFileUpload} disabled={disbalebtn}>Submit</button>}
+                  {hide && !updates &&<button onClick={()=>updateFileUpload(update)  } disabled={disbalebtn}>Update</button>}
                 </div>
               </div>
              )}
@@ -2282,10 +2307,8 @@ async function SystemDeleteImg(id) {
                 </div>
                 <input type="file" onChange={inputdata} />
                 <div className="popup_btn">
-                {!hide && isLoading && <button>Submited</button>}
-                {!hide && !isLoading  && <button onClick={SubmitQualityUpload}>Submit</button>}
-                {hide && !updates &&<button onClick={ ()=>UpdateQualityData(update)}>Update</button>}
-                {hide && updates &&<button>Updated</button>}
+                {!hide && !isLoading  && <button onClick={SubmitQualityUpload} disabled={disbalebtn}>Submit</button>}
+                {hide && !updates &&<button onClick={ ()=>UpdateQualityData(update)} disabled={disbalebtn}>Update</button>}
 </div>
               </div>
             )} 
@@ -2300,10 +2323,8 @@ async function SystemDeleteImg(id) {
                 </div>
                 <input type="file" onChange={inputdata} />
                 <div className="popup_btn">
-                {!hide && isLoading && <button>Submited</button>}
-                {!hide && !isLoading  && <button onClick={SubmitSystemUpload}>Submit</button>}
-                {hide && !updates &&<button onClick={ ()=>UpdateSystemData(update)}>Update</button>}
-                {hide && updates &&<button>Updated</button>}
+                {!hide && !isLoading  && <button onClick={SubmitSystemUpload} disabled={disbalebtn}>Submit</button>}
+                {hide && !updates &&<button onClick={ ()=>UpdateSystemData(update)} disabled={disbalebtn}>Update</button>}
 
                 </div>
               </div>
@@ -2319,10 +2340,8 @@ async function SystemDeleteImg(id) {
                 </div>
                 <input type="file" onChange={inputdata} />
                 <div className="popup_btn">
-                {!hide && isLoading && <button>Submited</button>}
-                {!hide && !isLoading  && <button onClick={internfileUpload}>Submit</button>}
-                {hide && !updates &&<button onClick={ ()=>internFileupdate(update)}>Update</button>}
-                {hide && updates &&<button>Updated</button>}
+                {!hide && !isLoading  && <button onClick={internfileUpload} disabled={disbalebtn}>Submit</button>}
+                {hide && !updates &&<button onClick={ ()=>internFileupdate(update)} disabled={disbalebtn}>Update</button>}
 
                 </div>
               </div>
@@ -2338,10 +2357,8 @@ async function SystemDeleteImg(id) {
                 </div>
                 <input type="file" onChange={inputdata} />
                 <div className="popup_btn">
-                {!hide && isLoading && <button>Submited</button>}
-                {!hide && !isLoading  && <button onClick={galleryFileUpload}>Submit</button>}
-                {hide && !updates &&<button onClick={ ()=>galleryFileupdate(update)}>Update</button>}
-                {hide && updates &&<button>Updated</button>}
+                {!hide && !isLoading  && <button onClick={galleryFileUpload} disabled={disbalebtn}>Submit</button>}
+                {hide && !updates &&<button onClick={ ()=>galleryFileupdate(update)} disabled={disbalebtn}>Update</button>}
 
                 </div>
               </div>
