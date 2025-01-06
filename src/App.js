@@ -1,5 +1,5 @@
 import './App.css';
-import Sidenavbar from './Components/Sidenavbar/Sidenavbar/Sidenavbar';
+import Sidenavbar from './Components/Sidenavbar/Sidenavbar';
 
 function App() {
   return (
